@@ -39,6 +39,14 @@ class _PermCheck(Check):
             detail="; ".join(detail),
         )
 
+    def remediate(self, ctx, rem):
+        try:
+            if os.stat(self.path).st_uid != self.owner_uid:
+                rem.chown_root(self.path)
+        except OSError:
+            pass
+        rem.chmod(self.path, self.max_mode)
+
 
 class ShadowPerms(_PermCheck):
     id = "fs-shadow-perms"

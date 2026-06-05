@@ -48,14 +48,29 @@ python3 -m hardenix audit
 
 # Salida en JSON (para integrar en otras herramientas)
 python3 -m hardenix audit --json
+
+# Ver qué corregiría (vista previa, no cambia nada)
+sudo python3 -m hardenix fix
+
+# Aplicar las correcciones (respalda cada cambio antes)
+sudo python3 -m hardenix fix --yes
+
+# Incluir también fixes con riesgo de bloqueo (p. ej. SSH solo-claves)
+sudo python3 -m hardenix fix --yes --incluir-riesgo
+
+# Deshacer el último conjunto de cambios
+sudo python3 -m hardenix rollback --yes
+sudo python3 -m hardenix rollback --list        # ver snapshots
 ```
 
-> Ejecútalo con `sudo` para que apliquen todos los checks (p. ej. lectura de `/etc/shadow`).
+> Ejecútalo con `sudo` para que apliquen todos los checks y se puedan escribir
+> los cambios. Por seguridad, `fix` **solo previsualiza** salvo que añadas `--yes`,
+> y omite los fixes peligrosos salvo `--incluir-riesgo`.
 
 ## Hoja de ruta
 
 - [x] **Fase 1** — Motor de checks, scoring e informe en terminal
-- [ ] **Fase 2** — Remediación automática con copia de seguridad y *rollback*
+- [x] **Fase 2** — Remediación automática con copia de seguridad y *rollback*
 - [ ] **Fase 3** — Informe HTML con comparativa antes/después
 - [ ] **Fase 4** — Explicaciones con IA local (LM Studio)
 - [ ] **Fase 5** — Más checks (firewall, servicios, auditd) y soporte multi-distro

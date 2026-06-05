@@ -54,3 +54,50 @@ def summary(findings):
     for f in findings:
         counts[f.status] += 1
     return counts
+
+
+def checks_by_id():
+    return {cls.id: cls for cls in discover_checks()}
+
+
+def run_fix(ctx, dry_run=True, only=None, include_risky=False):
+    """Aplica (o simula) las correcciones de los checks que fallan.
+
+    Devuelve un dict con la puntuación previa, el Remediator (con los cambios
+    registrados) y las listas de findings aplicados y omitidos.
+    """
+    from .remediation import Remediator
+
+    findings = run_audit(ctx, discover_checks())
+    before = score(findings)
+    registry = checks_by_id()
+    rem = Remediator(ctx, dry_run=dry_run)
+    applied, skipped = [], []
+
+    for f in findings:
+        if f.status != Status.FAIL:
+            continue
+        if only and f.id not in only:
+            continue
+        if not f.remediable:
+            skipped.append((f, "sin auto-fix disponible"))
+            continue
+        cls = registry.get(f.id)
+        if cls is None:
+            skipped.append((f, "check no encontrado"))
+            continue
+        check = cls()
+        if check.risky and not include_risky:
+            skipped.append((f, "riesgo de bloqueo — usa --incluir-riesgo"))
+            continue
+        try:
+            check.remediate(ctx, rem)
+            applied.append(f)
+        except NotImplementedError:
+            skipped.append((f, "sin auto-fix disponible"))
+        except (OSError, PermissionError) as e:
+            skipped.append((f, f"permiso denegado ({e}); prueba con sudo"))
+        except Exception as e:  # noqa: BLE001
+            skipped.append((f, f"error: {e}"))
+
+    return {"before": before, "rem": rem, "applied": applied, "skipped": skipped}

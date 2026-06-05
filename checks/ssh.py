@@ -33,11 +33,17 @@ class SSHRootLogin(_SSHCheck):
             detail="root puede iniciar sesión directamente por SSH.",
         )
 
+    def remediate(self, ctx, rem):
+        # 'prohibit-password' cumple la norma sin arriesgar el bloqueo total
+        # del acceso por clave (más seguro que 'no' en servidores remotos).
+        rem.set_sshd("PermitRootLogin", "prohibit-password")
+
 
 class SSHPasswordAuth(_SSHCheck):
     id = "ssh-password-auth"
     title = "Autenticación por contraseña deshabilitada (solo claves)"
     severity = Severity.MEDIUM
+    risky = True  # si no hay claves configuradas, deshabilitar contraseñas bloquea el acceso
     rationale = "El uso de claves en vez de contraseñas elimina la fuerza bruta de credenciales."
 
     def audit(self, ctx):
@@ -49,6 +55,9 @@ class SSHPasswordAuth(_SSHCheck):
             expected="PasswordAuthentication no",
             detail="Se permite login por contraseña (vulnerable a fuerza bruta).",
         )
+
+    def remediate(self, ctx, rem):
+        rem.set_sshd("PasswordAuthentication", "no")
 
 
 class SSHX11Forwarding(_SSHCheck):
@@ -65,6 +74,9 @@ class SSHX11Forwarding(_SSHCheck):
             current=f"X11Forwarding {v or 'yes'}",
             expected="X11Forwarding no",
         )
+
+    def remediate(self, ctx, rem):
+        rem.set_sshd("X11Forwarding", "no")
 
 
 class SSHMaxAuthTries(_SSHCheck):
@@ -86,6 +98,9 @@ class SSHMaxAuthTries(_SSHCheck):
             expected="MaxAuthTries 4",
         )
 
+    def remediate(self, ctx, rem):
+        rem.set_sshd("MaxAuthTries", "4")
+
 
 class SSHEmptyPasswords(_SSHCheck):
     id = "ssh-permit-empty-passwords"
@@ -101,6 +116,9 @@ class SSHEmptyPasswords(_SSHCheck):
             current=f"PermitEmptyPasswords {v or 'yes'}",
             expected="PermitEmptyPasswords no",
         )
+
+    def remediate(self, ctx, rem):
+        rem.set_sshd("PermitEmptyPasswords", "no")
 
 
 CHECKS = [

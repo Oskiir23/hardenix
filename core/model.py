@@ -62,11 +62,16 @@ class Check:
     rationale: str = ""
     references: list = []
     remediable: bool = False
+    risky: bool = False  # el fix puede dejar fuera al usuario (p. ej. lockout SSH)
 
     def applicable(self, ctx) -> bool:
         return True
 
     def audit(self, ctx) -> Finding:
+        raise NotImplementedError
+
+    def remediate(self, ctx, rem) -> None:
+        """Aplica la corrección usando los helpers de `rem` (Remediator)."""
         raise NotImplementedError
 
     # helpers para construir findings de forma compacta

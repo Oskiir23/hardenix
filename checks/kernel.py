@@ -24,6 +24,9 @@ class _SysctlCheck(Check):
             detail=self.rationale,
         )
 
+    def remediate(self, ctx, rem):
+        rem.write_sysctl(self.key, self.expected_value)
+
 
 class KernelASLR(_SysctlCheck):
     id = "kernel-aslr"

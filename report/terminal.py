@@ -91,3 +91,67 @@ def render(findings, ctx):
     print(f"  Puntuación de seguridad:  {col(_bold(str(s) + '/100'))}")
     print(f"  {col(_bar(s))}")
     print()
+
+
+def render_fix(ctx, res, applied_now, snap_id, after):
+    rem = res["rem"]
+    skipped = res["skipped"]
+    print()
+    head = "APLICANDO CORRECCIONES" if applied_now else "VISTA PREVIA (no se ha cambiado nada)"
+    print(_bold(_cyan("  HARDENIX fix")) + _dim(f"  ·  {head}"))
+    print()
+    if rem.changes:
+        print(_bold("  Cambios:"))
+        for typ, target, detail in rem.changes:
+            print(f"    {_green('+')} {_dim(typ.ljust(7))} {target}  →  {detail}")
+    else:
+        print(_dim("  No hay correcciones aplicables."))
+    if skipped:
+        print()
+        print(_bold("  Omitidos:"))
+        for f, why in skipped:
+            print(f"    {_yellow('-')} {f.title}  {_dim('(' + why + ')')}")
+    if rem.notes:
+        print()
+        for n in rem.notes:
+            print(_yellow(f"  ⚠ {n}"))
+    print()
+    if applied_now:
+        b = res["before"]
+        col = _score_color(after if after is not None else b)
+        if after is not None:
+            print(f"  Puntuación:  {b}/100  →  {col(_bold(str(after) + '/100'))}")
+        if snap_id:
+            print(_dim(f"  Snapshot guardado: {snap_id}  ·  revertir con:  hardenix rollback"))
+    else:
+        print(_dim("  Aplica los cambios con:  ") + _bold("hardenix fix --yes"))
+    print()
+
+
+def print_snapshots(snaps):
+    print()
+    if not snaps:
+        print(_dim("  No hay snapshots guardados."))
+        print()
+        return
+    print(_bold("  Snapshots disponibles:"))
+    for s in snaps:
+        print(f"    {_cyan(s['id'])}  {_dim(s['created'])}  ({len(s.get('changes', []))} cambios)")
+    print()
+
+
+def render_rollback(manifest, actions, applied):
+    print()
+    head = "ROLLBACK" if applied else "VISTA PREVIA ROLLBACK"
+    print(_bold(_cyan("  HARDENIX rollback")) + _dim(f"  ·  {head}  ({manifest['id']})"))
+    print()
+    if not actions:
+        print(_dim("  Nada que revertir."))
+    for kind, target in actions:
+        print(f"    {_yellow('↩')} {_dim(kind.ljust(9))} {target}")
+    print()
+    if applied:
+        print(_green("  Rollback completado."))
+    else:
+        print(_dim("  Ejecuta el rollback con:  ") + _bold("hardenix rollback --yes"))
+    print()

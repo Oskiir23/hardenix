@@ -27,6 +27,9 @@ class PasswordMaxDays(Check):
             return self.ok(current=f"PASS_MAX_DAYS {n}")
         return self.fail(current=f"PASS_MAX_DAYS {n}", expected="PASS_MAX_DAYS 365")
 
+    def remediate(self, ctx, rem):
+        rem.set_login_defs("PASS_MAX_DAYS", "365")
+
 
 class DefaultUmask(Check):
     id = "accounts-umask"
@@ -42,6 +45,9 @@ class DefaultUmask(Check):
         if v in ("027", "077", "0027", "0077"):
             return self.ok(current=f"UMASK {v}")
         return self.fail(current=f"UMASK {v or 'sin definir'}", expected="UMASK 027")
+
+    def remediate(self, ctx, rem):
+        rem.set_login_defs("UMASK", "027")
 
 
 class EmptyPasswords(Check):
