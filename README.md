@@ -95,6 +95,12 @@ qué importa y el riesgo real. **Todo ocurre en tu máquina — nada se envía a
 python3 -m hardenix audit --ai --ai-url http://localhost:1234/v1 --ai-model mistral-7b-instruct
 ```
 
+> ¿Ejecutas Hardenix en **WSL** con LM Studio en **Windows**? Por defecto no se
+> alcanza `localhost` entre ellos. Consulta [docs/IA-LOCAL-WSL.md](docs/IA-LOCAL-WSL.md)
+> (incluye un script-puente `scripts/wsl-lmstudio-bridge.py`).
+
+![Informe con explicaciones de IA local](docs/report-ai.png)
+
 > Ejecútalo con `sudo` para que apliquen todos los checks y se puedan escribir
 > los cambios. Por seguridad, `fix` **solo previsualiza** salvo que añadas `--yes`,
 > y omite los fixes peligrosos salvo `--incluir-riesgo`.
