@@ -6,8 +6,21 @@ procesamiento ocurre en local: nada se envía a la nube.
 """
 
 import json
+import re
 import urllib.error
 import urllib.request
+
+# Algunos modelos (sobre todo de código) cuelan caracteres CJK sueltos.
+# Los eliminamos para garantizar una salida limpia en español.
+_CJK = re.compile(
+    r"[　-〿぀-ヿ㐀-䶿一-鿿豈-﫿＀-￯]+"
+)
+
+
+def _clean(text):
+    text = _CJK.sub("", text)
+    text = re.sub(r"[ \t]{2,}", " ", text)
+    return text.strip()
 
 DEFAULT_URL = "http://localhost:1234/v1"
 
@@ -15,7 +28,8 @@ SYSTEM_PROMPT = (
     "Eres un experto en ciberseguridad y administración de sistemas Linux. "
     "Explica de forma clara, breve y profesional (3-4 frases, en español, sin "
     "markdown ni viñetas) un hallazgo de una auditoría de endurecimiento: qué "
-    "significa, por qué es importante y qué riesgo real implica si no se corrige."
+    "significa, por qué es importante y qué riesgo real implica si no se corrige. "
+    "Responde exclusivamente en español, sin usar caracteres de otros alfabetos."
 )
 
 
@@ -74,4 +88,4 @@ class AIClient:
             "stream": False,
         }
         resp = self._post("/chat/completions", payload)
-        return resp["choices"][0]["message"]["content"].strip()
+        return _clean(resp["choices"][0]["message"]["content"])
