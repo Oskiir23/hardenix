@@ -1,0 +1,6 @@
+# La auditoría base (Fase 1) funciona solo con la librería estándar de Python.
+# Estas dependencias se usan en fases posteriores:
+
+rich>=13.0        # informe enriquecido en terminal (opcional)
+jinja2>=3.0       # informe HTML
+requests>=2.28    # cliente para el LLM local (LM Studio)
