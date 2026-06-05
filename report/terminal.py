@@ -2,6 +2,7 @@
 
 import os
 import sys
+import textwrap
 
 from ..core.model import Status, Severity
 from ..core.runner import score, summary
@@ -51,7 +52,8 @@ def _bar(value, width=30):
     return "█" * filled + "░" * (width - filled)
 
 
-def render(findings, ctx):
+def render(findings, ctx, ai=None):
+    ai = ai or {}
     s = score(findings)
     counts = summary(findings)
     col = _score_color(s)
@@ -77,6 +79,13 @@ def render(findings, ctx):
                 print(_dim(f"          esperado: {f.expected}"))
             if f.detail:
                 print(_dim(f"          → {f.detail}"))
+            text = ai.get(f.id)
+            if text:
+                wrapped = textwrap.wrap(text, width=70)
+                if wrapped:
+                    print("          " + _cyan("🤖 " + wrapped[0]))
+                    for ln in wrapped[1:]:
+                        print("             " + _cyan(ln))
     print()
 
     # Resumen

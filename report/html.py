@@ -104,12 +104,15 @@ def render_html(after, before=None):
         detail = f.get("detail") or ""
         if f["status"] == "fail" and f.get("expected"):
             detail = (detail + f"  ·  esperado: {f['expected']}").strip()
+        ai_block = ""
+        if f.get("ai"):
+            ai_block = f'<div class="ai">🤖 {_html.escape(f["ai"])}</div>'
         rows.append(f"""
         <tr class="st-{f['status']}">
           <td>{_badge(st_label, st_color)}</td>
           <td>{_badge(sev_label, sev_color, dark_text=(f['severity'] in ('MEDIUM',)))}</td>
           <td class="title">{_html.escape(f['title'])} {fixed_badge}</td>
-          <td class="detail">{_html.escape(detail)}</td>
+          <td class="detail">{_html.escape(detail)}{ai_block}</td>
         </tr>""")
 
     return _PAGE.format(
@@ -160,6 +163,8 @@ _PAGE = """<!DOCTYPE html>
   tr:last-child td {{ border-bottom:none; }}
   td.title {{ font-weight:600; }}
   td.detail {{ color:#94a3b8; font-size:13px; }}
+  .ai {{ margin-top:8px; padding:8px 12px; background:#0b1a2e; border-left:3px solid #38bdf8;
+         border-radius:6px; color:#cbd5e1; font-size:13px; line-height:1.5; }}
   tr.st-pass td.title {{ color:#cbd5e1; font-weight:500; }}
   tr.st-fail {{ background:rgba(239,68,68,.05); }}
   footer {{ text-align:center; color:#475569; font-size:12px; margin-top:28px; }}

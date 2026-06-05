@@ -6,6 +6,7 @@ import os
 
 from . import __version__
 from .core.system import Ctx
+from .core.model import Status
 from .core.runner import (
     discover_checks,
     run_audit,
@@ -22,22 +23,56 @@ from .report.terminal import (
 )
 from .report.html import render_html
 
+AI_DEFAULT_URL = "http://localhost:1234/v1"
+
 
 def _write(path, text):
     with open(path, "w", encoding="utf-8") as fh:
         fh.write(text)
 
 
+def _ai_map(findings, args):
+    """Genera explicaciones IA para los fallos, si se pidió con --ai."""
+    if not getattr(args, "ai", False):
+        return {}
+    from .ai.explain import AIClient
+
+    client = AIClient(args.ai_url, args.ai_model)
+    if not client.available():
+        print(f"⚠ IA no disponible en {args.ai_url} ({client.last_error}). Continúo sin IA.")
+        print("  Abre LM Studio, carga un modelo y activa el 'Local Server'.")
+        return {}
+    fails = [f for f in findings if f.status == Status.FAIL]
+    print(f"🤖 Generando explicaciones con '{client.model}' ({len(fails)} hallazgos)...")
+    out = {}
+    for f in fails:
+        try:
+            out[f.id] = client.explain(f)
+        except Exception as e:  # noqa: BLE001
+            out[f.id] = f"(no se pudo generar la explicación: {e})"
+    return out
+
+
+def _inject_ai(data, ai_map):
+    for f in data["findings"]:
+        if f["id"] in ai_map:
+            f["ai"] = ai_map[f["id"]]
+    return data
+
+
 def cmd_audit(args):
     ctx = Ctx()
     findings = run_audit(ctx, discover_checks())
+    ai_map = _ai_map(findings, args)
     if args.json:
-        print(json.dumps(audit_to_dict(ctx, findings), indent=2, ensure_ascii=False))
+        data = _inject_ai(audit_to_dict(ctx, findings), ai_map)
+        print(json.dumps(data, indent=2, ensure_ascii=False))
     elif args.html:
-        _write(args.html, render_html(audit_to_dict(ctx, findings)))
+        data = _inject_ai(audit_to_dict(ctx, findings), ai_map)
+        _write(args.html, render_html(data))
         print(f"Informe HTML generado: {args.html}")
     else:
-        render(findings, ctx)
+        render(findings, ctx, ai=ai_map)
     return 0
 
 
@@ -60,12 +95,13 @@ def cmd_fix(args):
     render_fix(ctx, res, applied_now=apply, snap_id=snap_id, after=after)
 
     if args.report and after_findings is not None:
+        ai_map = _ai_map(after_findings, args)
         before_dict = {
             "score": res["before"],
             "system": ctx.distro_name(),
             "findings": [f.to_dict() for f in res["before_findings"]],
         }
-        after_dict = audit_to_dict(Ctx(), after_findings)
+        after_dict = _inject_ai(audit_to_dict(Ctx(), after_findings), ai_map)
         _write(args.report, render_html(after_dict, before_dict))
         print(f"  Informe antes/después: {args.report}")
     return 0
@@ -74,7 +110,8 @@ def cmd_fix(args):
 def cmd_report(args):
     ctx = Ctx()
     findings = run_audit(ctx, discover_checks())
-    after = audit_to_dict(ctx, findings)
+    ai_map = _ai_map(findings, args)
+    after = _inject_ai(audit_to_dict(ctx, findings), ai_map)
 
     before = None
     if args.baseline:
@@ -107,6 +144,15 @@ def cmd_rollback(args):
     return 0
 
 
+def _add_ai_flags(sp):
+    sp.add_argument("--ai", action="store_true",
+                    help="Añade explicaciones generadas por un LLM local (LM Studio).")
+    sp.add_argument("--ai-url", default=AI_DEFAULT_URL, metavar="URL",
+                    help=f"Endpoint del LLM local (por defecto {AI_DEFAULT_URL}).")
+    sp.add_argument("--ai-model", default=None, metavar="NAME",
+                    help="Modelo a usar (por defecto, el primero disponible).")
+
+
 def build_parser():
     p = argparse.ArgumentParser(
         prog="hardenix",
@@ -118,6 +164,7 @@ def build_parser():
     a = sub.add_parser("audit", help="Audita el sistema y muestra la puntuación.")
     a.add_argument("--json", action="store_true", help="Salida en formato JSON.")
     a.add_argument("--html", metavar="FILE", help="Genera un informe HTML en FILE.")
+    _add_ai_flags(a)
     a.set_defaults(func=cmd_audit)
 
     f = sub.add_parser("fix", help="Aplica correcciones (con copia de seguridad).")
@@ -127,12 +174,14 @@ def build_parser():
     f.add_argument("--incluir-riesgo", action="store_true",
                    help="Incluye fixes que pueden bloquear el acceso (p. ej. SSH).")
     f.add_argument("--report", metavar="FILE", help="Genera informe HTML antes/después tras aplicar.")
+    _add_ai_flags(f)
     f.set_defaults(func=cmd_fix)
 
     rp = sub.add_parser("report", help="Genera un informe HTML (con antes/después opcional).")
     rp.add_argument("--output", metavar="FILE", help="Fichero de salida (por defecto hardenix-report.html).")
     rp.add_argument("--baseline", metavar="FILE", help="JSON previo para comparar antes/después.")
     rp.add_argument("--save-baseline", metavar="FILE", help="Guarda la auditoría actual como baseline.")
+    _add_ai_flags(rp)
     rp.set_defaults(func=cmd_report)
 
     r = sub.add_parser("rollback", help="Revierte un snapshot de cambios.")

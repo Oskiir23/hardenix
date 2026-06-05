@@ -73,6 +73,26 @@ sudo python3 -m hardenix fix --yes --report informe.html
 # O guardando un baseline para comparar más tarde:
 python3 -m hardenix audit --json > antes.json
 python3 -m hardenix report --baseline antes.json --output informe.html
+
+# Con explicaciones generadas por un LLM local (LM Studio):
+python3 -m hardenix audit --ai
+python3 -m hardenix audit --ai --html informe.html
+```
+
+### IA local (opcional)
+
+Con `--ai`, Hardenix pide a un **LLM local** (vía LM Studio o cualquier servidor
+compatible con la API de OpenAI) que explique cada fallo en español: qué es, por
+qué importa y el riesgo real. **Todo ocurre en tu máquina — nada se envía a la nube.**
+
+1. Abre **LM Studio**, descarga y carga un modelo.
+2. Ve a la pestaña *Developer / Local Server* y pulsa **Start Server** (escucha en `http://localhost:1234`).
+3. Ejecuta Hardenix con `--ai`. Si el servidor no está activo, la auditoría
+   continúa con normalidad sin las explicaciones.
+
+```bash
+# Apuntar a otro endpoint o modelo
+python3 -m hardenix audit --ai --ai-url http://localhost:1234/v1 --ai-model mistral-7b-instruct
 ```
 
 > Ejecútalo con `sudo` para que apliquen todos los checks y se puedan escribir
@@ -84,7 +104,7 @@ python3 -m hardenix report --baseline antes.json --output informe.html
 - [x] **Fase 1** — Motor de checks, scoring e informe en terminal
 - [x] **Fase 2** — Remediación automática con copia de seguridad y *rollback*
 - [x] **Fase 3** — Informe HTML con comparativa antes/después
-- [ ] **Fase 4** — Explicaciones con IA local (LM Studio)
+- [x] **Fase 4** — Explicaciones con IA local (LM Studio)
 - [ ] **Fase 5** — Más checks (firewall, servicios, auditd) y soporte multi-distro
 - [ ] **Fase 6** — Dashboard web
 
