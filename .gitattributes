@@ -1,0 +1,5 @@
+# Hardenix es una herramienta para Linux: forzar finales de línea LF.
+* text=auto eol=lf
+*.py text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
