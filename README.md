@@ -4,6 +4,8 @@
 
 No es "otro script de checks": el objetivo es **auditar → puntuar → arreglar → volver a puntuar**, con informe antes/después y explicaciones en lenguaje claro.
 
+![Informe HTML de Hardenix con comparativa antes/después](docs/report.png)
+
 ```
   HARDENIX  ·  auditoría de endurecimiento Linux
   Sistema: Kali GNU/Linux Rolling
@@ -61,6 +63,16 @@ sudo python3 -m hardenix fix --yes --incluir-riesgo
 # Deshacer el último conjunto de cambios
 sudo python3 -m hardenix rollback --yes
 sudo python3 -m hardenix rollback --list        # ver snapshots
+
+# Informe HTML (abre el .html en el navegador)
+python3 -m hardenix audit --html informe.html
+
+# Informe con comparativa antes/después en un solo paso:
+sudo python3 -m hardenix fix --yes --report informe.html
+
+# O guardando un baseline para comparar más tarde:
+python3 -m hardenix audit --json > antes.json
+python3 -m hardenix report --baseline antes.json --output informe.html
 ```
 
 > Ejecútalo con `sudo` para que apliquen todos los checks y se puedan escribir
@@ -71,7 +83,7 @@ sudo python3 -m hardenix rollback --list        # ver snapshots
 
 - [x] **Fase 1** — Motor de checks, scoring e informe en terminal
 - [x] **Fase 2** — Remediación automática con copia de seguridad y *rollback*
-- [ ] **Fase 3** — Informe HTML con comparativa antes/después
+- [x] **Fase 3** — Informe HTML con comparativa antes/después
 - [ ] **Fase 4** — Explicaciones con IA local (LM Studio)
 - [ ] **Fase 5** — Más checks (firewall, servicios, auditd) y soporte multi-distro
 - [ ] **Fase 6** — Dashboard web

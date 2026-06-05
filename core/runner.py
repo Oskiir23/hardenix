@@ -1,5 +1,7 @@
 """Ejecuta los checks, recoge findings y calcula la puntuación."""
 
+from datetime import datetime
+
 from .model import Severity, Status, Finding
 
 _WEIGHT = {
@@ -56,6 +58,18 @@ def summary(findings):
     return counts
 
 
+def audit_to_dict(ctx, findings):
+    """Serializa una auditoría completa (para JSON, baseline o informe HTML)."""
+    counts = summary(findings)
+    return {
+        "generated": datetime.now().isoformat(timespec="seconds"),
+        "system": ctx.distro_name(),
+        "score": score(findings),
+        "summary": {s.name: counts[s] for s in Status},
+        "findings": [f.to_dict() for f in findings],
+    }
+
+
 def checks_by_id():
     return {cls.id: cls for cls in discover_checks()}
 
@@ -100,4 +114,10 @@ def run_fix(ctx, dry_run=True, only=None, include_risky=False):
         except Exception as e:  # noqa: BLE001
             skipped.append((f, f"error: {e}"))
 
-    return {"before": before, "rem": rem, "applied": applied, "skipped": skipped}
+    return {
+        "before": before,
+        "before_findings": findings,
+        "rem": rem,
+        "applied": applied,
+        "skipped": skipped,
+    }

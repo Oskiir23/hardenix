@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import os
 
 from . import __version__
 from .core.system import Ctx
@@ -10,6 +11,7 @@ from .core.runner import (
     run_audit,
     run_fix,
     score,
+    audit_to_dict,
 )
 from .core import remediation as rem_mod
 from .report.terminal import (
@@ -18,16 +20,22 @@ from .report.terminal import (
     print_snapshots,
     render_rollback,
 )
+from .report.html import render_html
+
+
+def _write(path, text):
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write(text)
 
 
 def cmd_audit(args):
     ctx = Ctx()
     findings = run_audit(ctx, discover_checks())
     if args.json:
-        print(json.dumps(
-            {"score": score(findings), "findings": [f.to_dict() for f in findings]},
-            indent=2, ensure_ascii=False,
-        ))
+        print(json.dumps(audit_to_dict(ctx, findings), indent=2, ensure_ascii=False))
+    elif args.html:
+        _write(args.html, render_html(audit_to_dict(ctx, findings)))
+        print(f"Informe HTML generado: {args.html}")
     else:
         render(findings, ctx)
     return 0
@@ -43,12 +51,45 @@ def cmd_fix(args):
 
     snap_id = None
     after = None
+    after_findings = None
     if apply and rem.has_changes():
         snap_id = rem.save_snapshot()
-        # Ctx nuevo: el anterior cachea sshd/login.defs y daría lecturas viejas.
-        after = score(run_audit(Ctx(), discover_checks()))
+        after_findings = run_audit(Ctx(), discover_checks())  # Ctx nuevo: evita caché stale
+        after = score(after_findings)
 
     render_fix(ctx, res, applied_now=apply, snap_id=snap_id, after=after)
+
+    if args.report and after_findings is not None:
+        before_dict = {
+            "score": res["before"],
+            "system": ctx.distro_name(),
+            "findings": [f.to_dict() for f in res["before_findings"]],
+        }
+        after_dict = audit_to_dict(Ctx(), after_findings)
+        _write(args.report, render_html(after_dict, before_dict))
+        print(f"  Informe antes/después: {args.report}")
+    return 0
+
+
+def cmd_report(args):
+    ctx = Ctx()
+    findings = run_audit(ctx, discover_checks())
+    after = audit_to_dict(ctx, findings)
+
+    before = None
+    if args.baseline:
+        if not os.path.exists(args.baseline):
+            print(f"No existe el baseline: {args.baseline}")
+            return 1
+        with open(args.baseline, encoding="utf-8") as fh:
+            before = json.load(fh)
+
+    out = args.output or "hardenix-report.html"
+    _write(out, render_html(after, before))
+    if args.save_baseline:
+        with open(args.save_baseline, "w", encoding="utf-8") as fh:
+            json.dump(after, fh, indent=2, ensure_ascii=False)
+    print(f"Informe HTML generado: {out}")
     return 0
 
 
@@ -76,6 +117,7 @@ def build_parser():
 
     a = sub.add_parser("audit", help="Audita el sistema y muestra la puntuación.")
     a.add_argument("--json", action="store_true", help="Salida en formato JSON.")
+    a.add_argument("--html", metavar="FILE", help="Genera un informe HTML en FILE.")
     a.set_defaults(func=cmd_audit)
 
     f = sub.add_parser("fix", help="Aplica correcciones (con copia de seguridad).")
@@ -84,7 +126,14 @@ def build_parser():
     f.add_argument("--only", metavar="ID[,ID...]", help="Aplica solo los checks indicados.")
     f.add_argument("--incluir-riesgo", action="store_true",
                    help="Incluye fixes que pueden bloquear el acceso (p. ej. SSH).")
+    f.add_argument("--report", metavar="FILE", help="Genera informe HTML antes/después tras aplicar.")
     f.set_defaults(func=cmd_fix)
+
+    rp = sub.add_parser("report", help="Genera un informe HTML (con antes/después opcional).")
+    rp.add_argument("--output", metavar="FILE", help="Fichero de salida (por defecto hardenix-report.html).")
+    rp.add_argument("--baseline", metavar="FILE", help="JSON previo para comparar antes/después.")
+    rp.add_argument("--save-baseline", metavar="FILE", help="Guarda la auditoría actual como baseline.")
+    rp.set_defaults(func=cmd_report)
 
     r = sub.add_parser("rollback", help="Revierte un snapshot de cambios.")
     r.add_argument("--list", action="store_true", help="Lista los snapshots guardados.")
