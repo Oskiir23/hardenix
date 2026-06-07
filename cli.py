@@ -130,6 +130,12 @@ def cmd_report(args):
     return 0
 
 
+def cmd_serve(args):
+    from .web.server import serve
+    serve(args.host, args.port)
+    return 0
+
+
 def cmd_rollback(args):
     ctx = Ctx()
     if args.list:
@@ -140,6 +146,8 @@ def cmd_rollback(args):
         print("No se encontró el snapshot solicitado (usa --list para verlos).")
         return 1
     actions = rem_mod.rollback(ctx, manifest, dry_run=not args.yes)
+    if args.yes:
+        rem_mod.delete_snapshot(ctx, manifest["id"])
     render_rollback(manifest, actions, applied=args.yes)
     return 0
 
@@ -183,6 +191,11 @@ def build_parser():
     rp.add_argument("--save-baseline", metavar="FILE", help="Guarda la auditoría actual como baseline.")
     _add_ai_flags(rp)
     rp.set_defaults(func=cmd_report)
+
+    sv = sub.add_parser("serve", help="Lanza el dashboard web (historial y tendencia).")
+    sv.add_argument("--host", default="127.0.0.1", help="Host de escucha (por defecto 127.0.0.1).")
+    sv.add_argument("--port", type=int, default=8080, help="Puerto (por defecto 8080).")
+    sv.set_defaults(func=cmd_serve)
 
     r = sub.add_parser("rollback", help="Revierte un snapshot de cambios.")
     r.add_argument("--list", action="store_true", help="Lista los snapshots guardados.")

@@ -108,6 +108,18 @@ python3 -m hardenix audit --ai --ai-url http://localhost:1234/v1 --ai-model mist
 
 ![Informe con explicaciones de IA local](docs/report-ai.png)
 
+## Dashboard web
+
+Un panel local (servidor de la librería estándar, **sin dependencias**) con la
+puntuación en vivo, el **historial de auditorías** y la **evolución del score**
+en el tiempo.
+
+```bash
+python3 -m hardenix serve            # http://127.0.0.1:8080
+```
+
+![Dashboard web de Hardenix](docs/dashboard.png)
+
 > Ejecútalo con `sudo` para que apliquen todos los checks y se puedan escribir
 > los cambios. Por seguridad, `fix` **solo previsualiza** salvo que añadas `--yes`,
 > y omite los fixes peligrosos salvo `--incluir-riesgo`.
@@ -119,7 +131,7 @@ python3 -m hardenix audit --ai --ai-url http://localhost:1234/v1 --ai-model mist
 - [x] **Fase 3** — Informe HTML con comparativa antes/después
 - [x] **Fase 4** — Explicaciones con IA local (LM Studio)
 - [x] **Fase 5** — Más checks (firewall, servicios, auditd, parches) y multi-distro
-- [ ] **Fase 6** — Dashboard web
+- [x] **Fase 6** — Dashboard web con historial y evolución del score
 
 ## Aviso
 

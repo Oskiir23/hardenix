@@ -205,6 +205,15 @@ def load_snapshot(ctx, snap_id=None):
     return None
 
 
+def delete_snapshot(ctx, snap_id):
+    path = os.path.join(backups_root(ctx), snap_id + ".json")
+    try:
+        os.remove(path)
+        return True
+    except OSError:
+        return False
+
+
 def rollback(ctx, manifest, dry_run=False):
     """Revierte un snapshot: restaura ficheros y valores sysctl previos."""
     actions = []
