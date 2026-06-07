@@ -4,6 +4,8 @@
 
 No es "otro script de checks": el objetivo es **auditar → puntuar → arreglar → volver a puntuar**, con informe antes/después y explicaciones en lenguaje claro.
 
+📄 **[Presentación del proyecto (PDF)](docs/Hardenix-Proyecto.pdf)** — qué hace, cómo funciona, instalación y proceso.
+
 ![Informe HTML de Hardenix con comparativa antes/después](docs/report.png)
 
 ```
