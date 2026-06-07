@@ -1,5 +1,7 @@
 # 🛡️ Hardenix
 
+[![tests](https://github.com/Oskiir23/hardenix/actions/workflows/tests.yml/badge.svg)](https://github.com/Oskiir23/hardenix/actions/workflows/tests.yml)
+
 **Auditor y endurecedor de seguridad para Linux** — escanea tu sistema contra buenas prácticas (estilo CIS Benchmark), te da una **puntuación de seguridad**, y (próximamente) **corrige** lo inseguro con copia de seguridad y *rollback*.
 
 No es "otro script de checks": el objetivo es **auditar → puntuar → arreglar → volver a puntuar**, con informe antes/después y explicaciones en lenguaje claro.
@@ -53,6 +55,13 @@ Cerca de 30 comprobaciones (estilo CIS Benchmark), con detección **multi-distro
 ## Uso
 
 Requiere Python 3.8+. La auditoría base **no necesita dependencias**.
+
+```bash
+git clone https://github.com/Oskiir23/hardenix.git
+```
+
+> Ejecuta los comandos desde la carpeta que **contiene** `hardenix/` (la que
+> queda tras el `git clone`), sin entrar en ella.
 
 ```bash
 # Auditar el sistema
@@ -126,6 +135,16 @@ python3 -m hardenix serve            # http://127.0.0.1:8080
 > Ejecútalo con `sudo` para que apliquen todos los checks y se puedan escribir
 > los cambios. Por seguridad, `fix` **solo previsualiza** salvo que añadas `--yes`,
 > y omite los fixes peligrosos salvo `--incluir-riesgo`.
+
+## Tests
+
+Suite de tests con `unittest` (sin dependencias). Usan un `Ctx` falso que
+simula el sistema, así que se ejecutan en cualquier sitio sin necesitar Linux
+real ni privilegios. Se ejecutan en CI (GitHub Actions) en Python 3.9–3.12.
+
+```bash
+python3 -m unittest discover -s hardenix/tests -t .
+```
 
 ## Hoja de ruta
 
