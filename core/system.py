@@ -65,6 +65,40 @@ class Ctx:
         d = self.distro
         return d.get("PRETTY_NAME") or d.get("NAME") or "Linux desconocido"
 
+    def family(self):
+        """Familia de la distribución: 'debian', 'rhel', 'arch' o 'unknown'."""
+        if "family" not in self.cache:
+            d = self.distro
+            idl = (d.get("ID", "") + " " + d.get("ID_LIKE", "")).lower()
+            fam = "unknown"
+            if any(x in idl for x in ("debian", "ubuntu", "kali", "mint")):
+                fam = "debian"
+            elif any(x in idl for x in ("rhel", "fedora", "centos", "rocky", "almalinux", "suse")):
+                fam = "rhel"
+            elif "arch" in idl:
+                fam = "arch"
+            self.cache["family"] = fam
+        return self.cache["family"]
+
+    # --- helpers de systemd ---
+    def has_systemd(self):
+        return bool(self.which("systemctl"))
+
+    def service_active(self, name):
+        rc, out, _ = self.run(["systemctl", "is-active", name])
+        return out.strip() == "active"
+
+    def service_enabled(self, name):
+        rc, out, _ = self.run(["systemctl", "is-enabled", name])
+        return out.strip() == "enabled"
+
+    def unit_present(self, name):
+        rc, out, _ = self.run(["systemctl", "is-enabled", name])
+        return out.strip() in (
+            "enabled", "disabled", "static", "masked", "indirect",
+            "generated", "enabled-runtime", "alias",
+        )
+
     def sysctl(self, key):
         """Valor de un parámetro sysctl, o None si no existe."""
         path = "/proc/sys/" + key.replace(".", "/")

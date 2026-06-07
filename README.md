@@ -31,14 +31,21 @@ La mayoría de auditores (Lynis, etc.) solo **avisan**. Hardenix busca:
 - 🤖 **Explicaciones con IA local** (vía LM Studio) — cada fallo explicado en español, sin enviar datos a la nube.
 - 🐧 Pensado para **multi-distro** (Debian/Ubuntu y RHEL).
 
-## Qué comprueba (Fase 1)
+## Qué comprueba
+
+Más de 20 comprobaciones (estilo CIS Benchmark), con detección **multi-distro**
+(Debian/Ubuntu y RHEL/Fedora):
 
 | Categoría | Ejemplos |
 |-----------|----------|
 | **SSH** | login de root, autenticación por clave, `MaxAuthTries`, X11, contraseñas vacías |
 | **Kernel (sysctl)** | ASLR, SYN cookies, ICMP redirects, *reverse path filtering* |
-| **Cuentas** | caducidad de contraseña, `UMASK`, contraseñas vacías, UID 0 único |
-| **Permisos** | `/etc/shadow`, `/etc/passwd` |
+| **Cuentas** | caducidad mín./máx. de contraseña, `UMASK`, algoritmo de hash, contraseñas vacías, UID 0 único |
+| **Permisos** | `/etc/shadow`, `/etc/gshadow`, `/etc/passwd`, `/etc/group` |
+| **Red** | cortafuegos activo (ufw/firewalld/nftables/iptables) |
+| **Servicios** | servicios heredados en texto plano (telnet, rsh, tftp, finger) |
+| **Auditoría** | `auditd` instalado y activo |
+| **Parches** | actualizaciones de seguridad pendientes (apt/dnf) |
 
 ## Uso
 
@@ -111,7 +118,7 @@ python3 -m hardenix audit --ai --ai-url http://localhost:1234/v1 --ai-model mist
 - [x] **Fase 2** — Remediación automática con copia de seguridad y *rollback*
 - [x] **Fase 3** — Informe HTML con comparativa antes/después
 - [x] **Fase 4** — Explicaciones con IA local (LM Studio)
-- [ ] **Fase 5** — Más checks (firewall, servicios, auditd) y soporte multi-distro
+- [x] **Fase 5** — Más checks (firewall, servicios, auditd, parches) y multi-distro
 - [ ] **Fase 6** — Dashboard web
 
 ## Aviso

@@ -100,4 +100,54 @@ class UniqueRoot(Check):
         )
 
 
-CHECKS = [PasswordMaxDays, DefaultUmask, EmptyPasswords, UniqueRoot]
+class PasswordMinDays(Check):
+    id = "accounts-pass-min-days"
+    title = "Edad mínima de contraseña configurada (PASS_MIN_DAYS >= 1)"
+    severity = Severity.LOW
+    references = REF
+    remediable = True
+    rationale = "Una edad mínima evita que un usuario rote la contraseña varias veces para volver a la anterior."
+
+    def audit(self, ctx):
+        defs = ctx.login_defs()
+        try:
+            n = int(defs.get("PASS_MIN_DAYS"))
+        except (TypeError, ValueError):
+            n = 0
+        if n >= 1:
+            return self.ok(current=f"PASS_MIN_DAYS {n}")
+        return self.fail(current=f"PASS_MIN_DAYS {n}", expected="PASS_MIN_DAYS 1")
+
+    def remediate(self, ctx, rem):
+        rem.set_login_defs("PASS_MIN_DAYS", "1")
+
+
+class PasswordHashAlgo(Check):
+    id = "accounts-hash-algo"
+    title = "Algoritmo de hash de contraseñas fuerte (SHA512/yescrypt)"
+    severity = Severity.MEDIUM
+    references = REF
+    remediable = True
+    rationale = "Algoritmos débiles (MD5, DES) facilitan el descifrado de los hashes de contraseña."
+
+    def audit(self, ctx):
+        v = (ctx.login_defs().get("ENCRYPT_METHOD") or "").upper()
+        if v in ("SHA512", "YESCRYPT"):
+            return self.ok(current=f"ENCRYPT_METHOD {v}")
+        return self.fail(
+            current=f"ENCRYPT_METHOD {v or 'sin definir'}",
+            expected="ENCRYPT_METHOD SHA512",
+        )
+
+    def remediate(self, ctx, rem):
+        rem.set_login_defs("ENCRYPT_METHOD", "SHA512")
+
+
+CHECKS = [
+    PasswordMaxDays,
+    PasswordMinDays,
+    DefaultUmask,
+    PasswordHashAlgo,
+    EmptyPasswords,
+    UniqueRoot,
+]

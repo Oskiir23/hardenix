@@ -66,4 +66,22 @@ class PasswdPerms(_PermCheck):
     rationale = "/etc/passwd debe ser legible pero solo modificable por root."
 
 
-CHECKS = [ShadowPerms, PasswdPerms]
+class GshadowPerms(_PermCheck):
+    id = "fs-gshadow-perms"
+    title = "Permisos correctos en /etc/gshadow"
+    severity = Severity.HIGH
+    path = "/etc/gshadow"
+    max_mode = 0o640
+    rationale = "/etc/gshadow contiene hashes de contraseñas de grupo; no debe ser legible por usuarios."
+
+
+class GroupPerms(_PermCheck):
+    id = "fs-group-perms"
+    title = "Permisos correctos en /etc/group"
+    severity = Severity.LOW
+    path = "/etc/group"
+    max_mode = 0o644
+    rationale = "/etc/group debe ser legible pero solo modificable por root."
+
+
+CHECKS = [ShadowPerms, PasswdPerms, GshadowPerms, GroupPerms]

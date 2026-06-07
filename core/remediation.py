@@ -32,6 +32,7 @@ class Remediator:
         self.dry = dry_run
         self._files = {}        # path -> snapshot dict (capturado una sola vez)
         self._sysctl_old = {}   # key -> valor de runtime previo
+        self._services = []     # estado previo de servicios modificados
         self.changes = []       # lista de (tipo, objetivo, detalle) para mostrar
         self.notes = []         # acciones manuales recomendadas (p. ej. reload)
 
@@ -135,6 +136,25 @@ class Remediator:
         if not self.dry:
             os.chown(path, 0, os.stat(path).st_gid)
 
+    def _record_service(self, name):
+        self._services.append({
+            "name": name,
+            "was_active": self.ctx.service_active(name),
+            "was_enabled": self.ctx.service_enabled(name),
+        })
+
+    def disable_service(self, name):
+        self._record_service(name)
+        self.changes.append(("service", name, "disable --now"))
+        if not self.dry:
+            self.ctx.run(["systemctl", "disable", "--now", name])
+
+    def enable_service(self, name):
+        self._record_service(name)
+        self.changes.append(("service", name, "enable --now"))
+        if not self.dry:
+            self.ctx.run(["systemctl", "enable", "--now", name])
+
     # --- persistencia del snapshot ---
     def has_changes(self):
         return bool(self.changes)
@@ -148,6 +168,7 @@ class Remediator:
             "changes": self.changes,
             "files": list(self._files.values()),
             "sysctl": [{"key": k, "old": v} for k, v in self._sysctl_old.items()],
+            "services": self._services,
         }
         root = backups_root(self.ctx)
         os.makedirs(root, exist_ok=True)
@@ -209,4 +230,11 @@ def rollback(ctx, manifest, dry_run=False):
             actions.append(("sysctl", f"{s['key']}={s['old']}"))
             if not dry_run:
                 ctx.run(["sysctl", "-w", f"{s['key']}={s['old']}"])
+    for s in manifest.get("services", []):
+        name = s["name"]
+        state = "activo" if s["was_active"] else "inactivo"
+        actions.append(("service", f"{name} -> {state}"))
+        if not dry_run:
+            ctx.run(["systemctl", "enable" if s["was_enabled"] else "disable", name])
+            ctx.run(["systemctl", "start" if s["was_active"] else "stop", name])
     return actions
