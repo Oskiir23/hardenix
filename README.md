@@ -35,13 +35,14 @@ La mayoría de auditores (Lynis, etc.) solo **avisan**. Hardenix busca:
 
 ## Qué comprueba
 
-Más de 20 comprobaciones (estilo CIS Benchmark), con detección **multi-distro**
+Cerca de 30 comprobaciones (estilo CIS Benchmark), con detección **multi-distro**
 (Debian/Ubuntu y RHEL/Fedora):
 
 | Categoría | Ejemplos |
 |-----------|----------|
-| **SSH** | login de root, autenticación por clave, `MaxAuthTries`, X11, contraseñas vacías |
+| **SSH** | login de root, solo-claves, `MaxAuthTries`, `LoginGraceTime`, `StrictModes`, X11, contraseñas vacías |
 | **Kernel (sysctl)** | ASLR, SYN cookies, ICMP redirects, *reverse path filtering* |
+| **PAM** | complejidad de contraseña (pwquality/cracklib), historial (pwhistory), bloqueo por fuerza bruta (faillock/tally2) |
 | **Cuentas** | caducidad mín./máx. de contraseña, `UMASK`, algoritmo de hash, contraseñas vacías, UID 0 único |
 | **Permisos** | `/etc/shadow`, `/etc/gshadow`, `/etc/passwd`, `/etc/group` |
 | **Red** | cortafuegos activo (ufw/firewalld/nftables/iptables) |

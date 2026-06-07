@@ -5,6 +5,19 @@ from ..core.model import Check, Severity
 REF = ["CIS Benchmark - SSH Server", "man sshd_config"]
 
 
+def _seconds(value, default=120):
+    """Convierte un tiempo estilo sshd (120, 2m, 30s) a segundos."""
+    v = (value or "").strip().lower()
+    try:
+        if v.endswith("m"):
+            return int(v[:-1]) * 60
+        if v.endswith("s"):
+            return int(v[:-1])
+        return int(v)
+    except ValueError:
+        return default
+
+
 class _SSHCheck(Check):
     references = REF
     remediable = True
@@ -121,10 +134,61 @@ class SSHEmptyPasswords(_SSHCheck):
         rem.set_sshd("PermitEmptyPasswords", "no")
 
 
+class SSHLoginGraceTime(_SSHCheck):
+    id = "ssh-login-grace-time"
+    title = "Tiempo de gracia de login bajo (LoginGraceTime <= 60s)"
+    severity = Severity.MEDIUM
+    rationale = "Un LoginGraceTime alto mantiene conexiones sin autenticar abiertas, facilitando DoS y fuerza bruta."
+
+    def audit(self, ctx):
+        secs = _seconds(self._value(ctx, "logingracetime"))
+        if secs <= 60:
+            return self.ok(current=f"LoginGraceTime {secs}s")
+        return self.fail(current=f"LoginGraceTime {secs}s", expected="LoginGraceTime 60")
+
+    def remediate(self, ctx, rem):
+        rem.set_sshd("LoginGraceTime", "60")
+
+
+class SSHPubkeyAuth(_SSHCheck):
+    id = "ssh-pubkey-auth"
+    title = "Autenticación por clave pública habilitada"
+    severity = Severity.LOW
+    rationale = "La autenticación por clave pública es la base del acceso seguro sin contraseñas."
+
+    def audit(self, ctx):
+        v = self._value(ctx, "pubkeyauthentication")
+        if v == "yes":
+            return self.ok(current="PubkeyAuthentication yes")
+        return self.fail(current=f"PubkeyAuthentication {v or 'no'}", expected="PubkeyAuthentication yes")
+
+    def remediate(self, ctx, rem):
+        rem.set_sshd("PubkeyAuthentication", "yes")
+
+
+class SSHStrictModes(_SSHCheck):
+    id = "ssh-strict-modes"
+    title = "StrictModes activado"
+    severity = Severity.LOW
+    rationale = "StrictModes hace que sshd rechace claves/ficheros con permisos inseguros."
+
+    def audit(self, ctx):
+        v = self._value(ctx, "strictmodes")
+        if v == "yes":
+            return self.ok(current="StrictModes yes")
+        return self.fail(current=f"StrictModes {v or 'no'}", expected="StrictModes yes")
+
+    def remediate(self, ctx, rem):
+        rem.set_sshd("StrictModes", "yes")
+
+
 CHECKS = [
     SSHRootLogin,
     SSHPasswordAuth,
     SSHX11Forwarding,
     SSHMaxAuthTries,
     SSHEmptyPasswords,
+    SSHLoginGraceTime,
+    SSHPubkeyAuth,
+    SSHStrictModes,
 ]

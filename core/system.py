@@ -14,6 +14,9 @@ SSHD_DEFAULTS = {
     "x11forwarding": "no",
     "maxauthtries": "6",
     "permitemptypasswords": "no",
+    "pubkeyauthentication": "yes",
+    "strictmodes": "yes",
+    "logingracetime": "120",
 }
 
 

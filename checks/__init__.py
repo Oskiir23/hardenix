@@ -1,6 +1,6 @@
 """Registro central de todos los checks disponibles."""
 
-from . import ssh, kernel, accounts, filesystem, firewall, services, auditd, updates
+from . import ssh, kernel, accounts, filesystem, firewall, services, auditd, updates, pam
 
 ALL_CHECKS = [
     *ssh.CHECKS,
@@ -11,4 +11,5 @@ ALL_CHECKS = [
     *services.CHECKS,
     *auditd.CHECKS,
     *updates.CHECKS,
+    *pam.CHECKS,
 ]
